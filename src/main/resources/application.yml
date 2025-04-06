@@ -16,7 +16,7 @@ spring:
 # mybatis-plus配置
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: true  # 自动将下划线转为驼峰
+    map-underscore-to-camel-case: false  # 自动将下划线转为驼峰
     # 仅在开发环境打印日志
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
