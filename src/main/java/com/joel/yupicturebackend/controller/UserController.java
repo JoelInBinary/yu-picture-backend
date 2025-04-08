@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * ClassName: UserController
  * Description:
- * 用户相关请求
+ * 用户相关
  * @Author Joel
  */
 @RestController
