@@ -18,9 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.io.File;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 /**
  * ClassName: FileManager
@@ -31,6 +29,7 @@ import java.util.List;
  */
 @Service
 @Slf4j
+@Deprecated
 public class FileManager {
 
     @Resource
