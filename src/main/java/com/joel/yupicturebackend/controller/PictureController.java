@@ -10,6 +10,7 @@ import com.joel.yupicturebackend.constants.UserConstant;
 import com.joel.yupicturebackend.exception.BusinessException;
 import com.joel.yupicturebackend.exception.ErrorCode;
 import com.joel.yupicturebackend.exception.ThrowUtils;
+import com.joel.yupicturebackend.manager.CacheManager;
 import com.joel.yupicturebackend.model.dto.picture.*;
 import com.joel.yupicturebackend.model.entity.Picture;
 import com.joel.yupicturebackend.model.entity.User;
@@ -20,6 +21,7 @@ import com.joel.yupicturebackend.service.PictureService;
 import com.joel.yupicturebackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
@@ -44,6 +46,12 @@ public class PictureController {
 
     @Resource
     private PictureService pictureService;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private CacheManager cacheManager;
 
     /**
      * 通过本地文件上传图片（可重新上传）
@@ -184,6 +192,32 @@ public class PictureController {
         // 获取封装类
         return ResultUtils.success(pictureService.getPictureVOPage(picturePage, request));
     }
+
+    /**
+     * 分页获取图片列表（有缓存）
+     */
+    @PostMapping("/list/page/vo/cache")
+    public BaseResponse<Page<PictureVO>> listPictureVOByPageWithCache(@RequestBody PictureQueryRequest pictureQueryRequest,
+                                                                      HttpServletRequest request) {
+        // 参数校验
+        long current = pictureQueryRequest.getCurrent();
+        long size = pictureQueryRequest.getPageSize();
+        // 限制爬虫
+        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        // 普通用户默认只能查看已过审的数据
+        pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+
+        // 调用 CacheManager 的通用缓存查询方法，若缓存中存在数据则直接返回，否则查询数据库并更新缓存
+        Page<PictureVO> pictureVOPage = cacheManager.getWithCache("yupicture:listPictureVOByPage",
+                pictureQueryRequest,
+                Page.class, () -> {Page<Picture> picturePage = pictureService.page(new Page<>(current, size),
+                    pictureService.getQueryWrapper(pictureQueryRequest));
+            return pictureService.getPictureVOPage(picturePage, request);
+        });
+        // 返回封装类结果
+        return ResultUtils.success(pictureVOPage);
+    }
+
 
     /**
      * 编辑图片（给用户使用）
