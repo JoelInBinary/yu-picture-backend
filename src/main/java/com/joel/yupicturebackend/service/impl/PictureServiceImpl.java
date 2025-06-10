@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.joel.yupicturebackend.exception.BusinessException;
 import com.joel.yupicturebackend.exception.ErrorCode;
 import com.joel.yupicturebackend.exception.ThrowUtils;
+import com.joel.yupicturebackend.manager.CosManager;
 import com.joel.yupicturebackend.manager.upload.FilePictureUpload;
 import com.joel.yupicturebackend.manager.upload.PictureUploadTemplate;
 import com.joel.yupicturebackend.manager.upload.UrlPictureUpload;
@@ -31,6 +32,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -60,6 +62,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private UrlPictureUpload urlPictureUpload;
+
+    @Resource
+    private CosManager cosManager;
 
     /**
      * 图片数据校验方法，用于更新和修改图片时进行判断
@@ -120,6 +125,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 构造要入库的图片信息
         Picture picture = new Picture();
         picture.setUrl(uploadPictureResult.getUrl());
+        picture.setThumbnailUrl(uploadPictureResult.getThumbnailUrl());
         // 支持外层传递图片名称
         String picName = uploadPictureResult.getPicName();
         if (pictureUploadRequest != null && StrUtil.isNotBlank(pictureUploadRequest.getPicName())) {
@@ -379,6 +385,26 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         return uploadCount;
     }
 
+    @Async
+    @Override
+    public void clearPictureFile(Picture oldPicture) {
+        // 判断该图片是否被多条记录使用，例如秒传的场景
+        String pictureUrl = oldPicture.getUrl();
+        long count = this.lambdaQuery()
+                .eq(Picture::getUrl, pictureUrl)
+                .count();
+        // 有不止一条记录用到了该图片，不清理
+        if (count > 1) {
+            return;
+        }
+        // 这里的 url 包含了域名，实际上只要传 key 值（存储路径）就够了
+        cosManager.deleteObject(pictureUrl);
+        // 清理缩略图
+        String thumbnailUrl = oldPicture.getThumbnailUrl();
+        if (StrUtil.isNotBlank(thumbnailUrl)) {
+            cosManager.deleteObject(thumbnailUrl);
+        }
+    }
 
 }
 
