@@ -2,10 +2,7 @@ package com.joel.yupicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.joel.yupicturebackend.model.dto.picture.PictureQueryRequest;
-import com.joel.yupicturebackend.model.dto.picture.PictureReviewRequest;
-import com.joel.yupicturebackend.model.dto.picture.PictureUploadByBatchRequest;
-import com.joel.yupicturebackend.model.dto.picture.PictureUploadRequest;
+import com.joel.yupicturebackend.model.dto.picture.*;
 import com.joel.yupicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.joel.yupicturebackend.model.entity.User;
@@ -88,9 +85,30 @@ public interface PictureService extends IService<Picture> {
     );
 
     /**
+     * 删除图片
+     * @param pictureId
+     * @param loginUser
+     */
+    void deletePicture(long pictureId, User loginUser);
+
+    /**
+     * 编辑图片
+     * @param pictureEditRequest
+     * @param loginUser
+     */
+    void editPicture(PictureEditRequest pictureEditRequest, User loginUser);
+
+    /**
      * 清理图片文件
      * @param oldPicture
      */
     void clearPictureFile(Picture oldPicture);
+
+    /**
+     * 校验是否有操作空间图片的权限
+     * @param loginUser
+     * @param picture
+     */
+    void checkPictureAuth(User loginUser, Picture picture);
 
 }
